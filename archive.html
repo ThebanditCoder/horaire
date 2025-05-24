@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Archives des Horaires - Jardin Tropical</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 16px;
+      margin: 0;
+      background: #f4f4f4;
+      color: #333;
+    }
+    header {
+      text-align: center;
+      background: #fff;
+      padding: 30px 10px 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    header img {
+      height: 80px;
+      margin-bottom: 10px;
+    }
+    h1 {
+      color: #08754B;
+      font-size: 28px;
+      margin-bottom: 0;
+    }
+    main {
+      padding: 20px;
+    }
+    a.back {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #08754B;
+      text-decoration: none;
+      border: 2px solid #08754B;
+      padding: 8px 16px;
+      border-radius: 5px;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      min-width: 700px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 12px 8px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background-color: #E6EB84;
+      font-weight: bold;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      margin: 0 4px;
+    }
+    @media (max-width: 600px) {
+      header img { height: 60px; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="Logo2025-26.jpg" alt="Logo Jardin Tropical">
+  <h1>Archives des Horaires</h1>
+</header>
+
+<main>
+  <a href="index.html" class="back">&larr; Retour à la Gestion Horaire</a>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Employé</th>
+          <th>Date</th>
+          <th>Entrée</th>
+          <th>Sortie</th>
+          <th>Heures Travaillées</th>
+          <th>Note</th>
+          <th>Archivé le</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="archive-body"></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+function calculateWorkedHours(entree, sortie) {
+  if (!entree || !sortie) return '';
+  const [h1, m1] = entree.split(':').map(Number);
+  const [h2, m2] = sortie.split(':').map(Number);
+  let diffH = h2 - h1;
+  let diffM = m2 - m1;
+  if (diffM < 0) { diffM += 60; diffH--; }
+  if (diffH < 0) { diffH += 24; }
+  return `${diffH}h${diffM < 10 ? '0' + diffM : diffM}`;
+}
+
+function sendToWhatsApp(data) {
+  const [employe, date, entree, sortie, note, archiveDate] = data;
+  const heures = calculateWorkedHours(entree, sortie);
+  const message =
+    `*Employé:* ${employe}%0A` +
+    `*Date:* ${date}%0A` +
+    `*Entrée:* ${entree}%0A` +
+    `*Sortie:* ${sortie}%0A` +
+    `*Heures:* ${heures}%0A` +
+    `*Note:* ${note}%0A` +
+    `*Archivé le:* ${archiveDate}`;
+  const url = `https://wa.me/?text=${message}`;
+  window.open(url, "_blank");
+}
+
+function deleteEntry(index) {
+  const archives = JSON.parse(localStorage.getItem("archives_date")) || [];
+  if (confirm("Confirmer la suppression de cette entrée ?")) {
+    archives.splice(index, 1);
+    localStorage.setItem("archives_date", JSON.stringify(archives));
+    location.reload();
+  }
+}
+
+function loadArchives() {
+  const archives = JSON.parse(localStorage.getItem("archives_date")) || [];
+  const tbody = document.getElementById("archive-body");
+
+  archives.forEach((data, index) => {
+    const [employe, date, entree, sortie, note, archivage] = data;
+    const row = tbody.insertRow();
+
+    row.insertCell().innerText = employe;
+    row.insertCell().innerText = date;
+    row.insertCell().innerText = entree;
+    row.insertCell().innerText = sortie;
+    row.insertCell().innerText = calculateWorkedHours(entree, sortie);
+    row.insertCell().innerText = note;
+    row.insertCell().innerText = archivage;
+
+    const actionCell = row.insertCell();
+
+    const whatsappBtn = document.createElement("button");
+    whatsappBtn.className = "icon-btn";
+    whatsappBtn.innerHTML = '<i class="fab fa-whatsapp" style="color:#25D366;"></i>';
+    whatsappBtn.onclick = () => sendToWhatsApp(data);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "icon-btn";
+    deleteBtn.innerHTML = '<i class="fas fa-trash" style="color:#d11a2a;"></i>';
+    deleteBtn.onclick = () => deleteEntry(index);
+
+    actionCell.appendChild(whatsappBtn);
+    actionCell.appendChild(deleteBtn);
+  });
+}
+
+function archiverHoraire() {
+    const rows = document.querySelectorAll("#horaire-table tbody tr");
+    let archives = JSON.parse(localStorage.getItem("archives_date")) || [];
+
+    rows.forEach(row => {
+        const employe = row.querySelector("select").value;
+        const date = row.querySelector("input[type='date']").value;
+        const entree = row.querySelector("input[type='time']").value;
+        const sortie = row.querySelectorAll("input[type='time']")[1].value;
+        const note = row.querySelector("textarea").value;
+        const dateArchivage = new Date().toISOString().split('T')[0];
+        archives.push([employe, date, entree, sortie, note, dateArchivage]);
+    });
+
+    localStorage.setItem("archives_date", JSON.stringify(archives));
+    alert("Horaires archivés !");
+    window.location.href = "archive.html";
+}
+
+window.onload = loadArchives;
+</script>
+
+</body>
+</html>

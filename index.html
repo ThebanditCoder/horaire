@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestion Horaire</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 0; background: #fcfbfb; }
+    h2 { text-align: center; color: #08754B; margin-top: 10px; }
+    table { width: 95%; margin: 20px auto; border-collapse: collapse; background: white; }
+    th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
+    th { background-color: #E6EB84; }
+    .controls, .footer-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 15px; }
+    input, select, textarea { padding: 5px; font-size: 14px; }
+    button { background: #08754B; color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 5px; }
+    button:hover { background-color: #6DBB7B; }
+    .total { text-align: right; padding-right: 50px; font-weight: bold; }
+    textarea { resize: vertical; width: 100%; }
+    .logo-container {
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    }
+
+    .logo-container img {
+    max-width: 180px;
+    height: auto;
+    }
+    @media (max-width: 768px) {
+  table, thead, tbody, th, td, tr {
+    display: block;
+    width: 100%;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tr {
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background: white;
+  }
+
+  td {
+    text-align: left;
+    position: relative;
+    padding-left: 50%;
+  }
+
+  td::before {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 45%;
+    white-space: nowrap;
+    font-weight: bold;
+  }
+
+  td:nth-child(1)::before { content: "Employé"; }
+  td:nth-child(2)::before { content: "Date"; }
+  td:nth-child(3)::before { content: "Entrée"; }
+  td:nth-child(4)::before { content: "Sortie"; }
+  td:nth-child(5)::before { content: "Heures Travaillées"; }
+  td:nth-child(6)::before { content: "Note"; }
+  td:nth-child(7)::before { content: "Actions"; }
+}
+
+
+  </style>
+</head>
+<body>
+  <div class="logo-container">
+  <img src="Logo2025-26.jpg" alt="Logo Jardin Tropical">
+</div>
+  <h2>Gestion Horaire</h2>
+
+  <div class="controls">
+    <label>Ajouter un employé :
+      <input type="text" id="new-employee" placeholder="Nom de l'employé" />
+    </label>
+    <button onclick="ajouterEmploye()">Ajouter</button>
+
+    <label>Supprimer :
+      <select id="remove-employee"></select>
+    </label>
+    <button onclick="supprimerEmploye()">Supprimer</button>
+  </div>
+
+  <table id="horaire-table">
+    <thead>
+      <tr>
+        <th>Employé</th>
+        <th>Date</th>
+        <th>Entrée</th>
+        <th>Sortie</th>
+        <th>Heures Travaillées</th>
+        <th>Note</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="footer-buttons">
+    <button onclick="ajouterLigne()">Ajouter Horaire</button>
+    <button onclick="archiverHoraire()">Archiver</button>
+    <a href="archive.html" style="text-decoration: none;"><button>Voir Archives</button></a>
+  </div>
+
+  <div class="total" id="total-heures">Total : 0h00</div>
+
+  <script>
+    let employes = JSON.parse(localStorage.getItem("employes")) || [];
+
+    function updateMenus() {
+      const removeSelect = document.getElementById("remove-employee");
+      removeSelect.innerHTML = '<option value="" disabled selected hidden>Sélectionner un employé</option>';
+
+
+      employes.forEach(emp => {
+        const opt = new Option(emp, emp);
+        removeSelect.add(opt);
+      });
+    }
+
+    function ajouterEmploye() {
+      const nom = document.getElementById("new-employee").value.trim();
+      if (nom && !employes.includes(nom)) {
+        employes.push(nom);
+        localStorage.setItem("employes", JSON.stringify(employes));
+        updateMenus();
+        document.getElementById("new-employee").value = "";
+      }
+    }
+
+    function supprimerEmploye() {
+      const selected = document.getElementById("remove-employee").value;
+      employes = employes.filter(e => e !== selected);
+      localStorage.setItem("employes", JSON.stringify(employes));
+      updateMenus();
+    }
+
+    function ajouterLigne() {
+      const tbody = document.querySelector("#horaire-table tbody");
+      const tr = document.createElement("tr");
+
+      // Employé
+      const tdEmploye = document.createElement("td");
+      const sel = document.createElement("select");
+      employes.forEach(emp => {
+        const opt = new Option(emp, emp);
+        sel.add(opt);
+      });
+      tdEmploye.appendChild(sel);
+      tr.appendChild(tdEmploye);
+
+      // Date
+      const tdDate = document.createElement("td");
+      const date = document.createElement("input");
+      date.type = "date";
+      tdDate.appendChild(date);
+      tr.appendChild(tdDate);
+
+      // Entrée
+      const tdEntree = document.createElement("td");
+      const entree = document.createElement("input");
+      entree.type = "time";
+      tdEntree.appendChild(entree);
+      tr.appendChild(tdEntree);
+
+      // Sortie
+      const tdSortie = document.createElement("td");
+      const sortie = document.createElement("input");
+      sortie.type = "time";
+      tdSortie.appendChild(sortie);
+      tr.appendChild(tdSortie);
+
+      // Heures travaillées
+      const tdHeures = document.createElement("td");
+      tdHeures.textContent = "0h00";
+      tr.appendChild(tdHeures);
+
+      // Note
+      const tdNote = document.createElement("td");
+      const note = document.createElement("textarea");
+      note.rows = 2;
+      tdNote.appendChild(note);
+      tr.appendChild(tdNote);
+
+      // Actions
+      const tdActions = document.createElement("td");
+      const btnSupprimer = document.createElement("button");
+      btnSupprimer.textContent = "🗑️";
+      btnSupprimer.onclick = () => {
+        tr.remove();
+        recalculTotal();
+      };
+      tdActions.appendChild(btnSupprimer);
+      tr.appendChild(tdActions);
+
+      entree.addEventListener("change", () => calculer(tr));
+      sortie.addEventListener("change", () => calculer(tr));
+
+      tbody.appendChild(tr);
+    }
+
+    function calculer(tr) {
+      const entree = tr.querySelectorAll("input[type='time']")[0].value;
+      const sortie = tr.querySelectorAll("input[type='time']")[1].value;
+      if (entree && sortie) {
+        const [h1, m1] = entree.split(":").map(Number);
+        const [h2, m2] = sortie.split(":").map(Number);
+        let min = h2 * 60 + m2 - (h1 * 60 + m1);
+        if (min < 0) min += 1440;
+        const h = Math.floor(min / 60);
+        const m = min % 60;
+        tr.querySelector("td:nth-child(5)").textContent = `${h}h${m.toString().padStart(2, "0")}`;
+        recalculTotal();
+      }
+    }
+
+    function recalculTotal() {
+      let total = 0;
+      document.querySelectorAll("#horaire-table tbody tr").forEach(row => {
+        const txt = row.querySelector("td:nth-child(5)").textContent;
+        const [h, m] = txt.split("h").map(Number);
+        total += h * 60 + m;
+      });
+      const h = Math.floor(total / 60);
+      const m = total % 60;
+      document.getElementById("total-heures").textContent = `Total : ${h}h${m.toString().padStart(2, "0")}`;
+    }
+
+    function archiverHoraire() {
+      const rows = document.querySelectorAll("#horaire-table tbody tr");
+      let archives = JSON.parse(localStorage.getItem("archives_date")) || [];
+
+      rows.forEach(row => {
+        const employe = row.querySelector("select")?.value || "";
+        const date = row.querySelector("input[type='date']")?.value || "";
+        const times = row.querySelectorAll("input[type='time']");
+        const entree = times[0]?.value || "";
+        const sortie = times[1]?.value || "";
+        const note = row.querySelector("textarea")?.value || "";
+        const dateArchivage = new Date().toISOString().split('T')[0];
+
+        if (employe && date) {
+          archives.push([employe, date, entree, sortie, note, dateArchivage]);
+        }
+      });
+
+      localStorage.setItem("archives_date", JSON.stringify(archives));
+      alert("Horaires archivés !");
+      window.location.href = "archive.html";
+    }
+
+    updateMenus();
+  </script>
+</body>
+</html>
